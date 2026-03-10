@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Monitoring IoT</title>
+    <style>
+        /* Pengaturan Tampilan Dasar */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #eef2f7; 
+            margin: 0; 
+            padding: 40px 20px; 
+            text-align: center; 
+        }
+
+        h1 { color: #333; margin-bottom: 30px; }
+
+        /* Wadah Kartu Sensor */
+        .container { 
+            display: flex; 
+            justify-content: center; 
+            gap: 20px; 
+            flex-wrap: wrap; 
+        }
+
+        /* Desain Kartu */
+        .card { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 15px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+            width: 220px; 
+            border-top: 10px solid #3498db; /* Warna default biru */
+        }
+
+        .label { 
+            font-size: 0.9rem; 
+            color: #777; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+        }
+
+        .value { 
+            font-size: 3.2rem; 
+            font-weight: bold; 
+            color: #2c3e50; 
+            margin: 15px 0; 
+        }
+
+        .unit { font-size: 1.2rem; color: #999; }
+
+        /* Warna khusus untuk tiap sensor */
+        .card-dht { border-top-color: #e67e22; } /* Oranye */
+        .card-hum { border-top-color: #27ae60; } /* Hijau */
+
+        /* Info Status di Bawah */
+        #info { 
+            margin-top: 40px; 
+            background: #fff; 
+            display: inline-block; 
+            padding: 10px 20px; 
+            border-radius: 30px; 
+            font-size: 0.85rem; 
+            color: #555; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .loading-dot {
+            height: 8px; width: 8px; background-color: #2ecc71;
+            border-radius: 50%; display: inline-block; margin-right: 5px;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0% { opacity: 0.2; } 50% { opacity: 1; } 100% { opacity: 0.2; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Dashboard Monitoring Sensor</h1>
+
+    <div class="container">
+        <div class="card">
+            <div class="label">Suhu LM35</div>
+            <div class="value"><span id="vLM">0</span><span class="unit">°C</span></div>
+        </div>
+
+        <div class="card card-dht">
+            <div class="label">Suhu DHT22</div>
+            <div class="value"><span id="vDHT">0</span><span class="unit">°C</span></div>
+        </div>
+
+        <div class="card card-hum">
+            <div class="label">Kelembapan</div>
+            <div class="value"><span id="vHUM">0</span><span class="unit">%</span></div>
+        </div>
+    </div>
+
+    <div id="info">
+        <span class="loading-dot"></span>
+        <span id="text-info">Menghubungkan ke Google Sheets...</span>
+    </div>
+
+    <script>
+        // PENTING: Ganti link di bawah ini dengan URL Web App (Deployment) kamu yang asli
+        const scriptURL = "https://script.google.com/macros/s/AKfycbwycfFYPvh83_Z5f7ndIGRglPccbA1ILlkfYasbZ4z5p9PK7M9vZC1Lkxh93DD6NAYU/exec";
+
+        async function fetchData() {
+            try {
+                const response = await fetch(scriptURL);
+                const data = await response.json();
+                
+                // Mengambil data terakhir (indeks 0 jika Apps Script kamu hanya kirim 1 data)
+                const lastRow = data[0];
+
+                // Menampilkan data ke HTML dengan pembulatan 2 desimal (.toFixed(2))
+                document.getElementById('vLM').innerText = Number(lastRow.tempLM).toFixed(2);
+                document.getElementById('vDHT').innerText = Number(lastRow.tempDHT).toFixed(2);
+                document.getElementById('vHUM').innerText = Number(lastRow.humDHT).toFixed(2);
+                
+                // Format tanggal agar lebih rapi (misal: 10 Mar 2026)
+                let opsiTanggal = { day: 'numeric', month: 'short', year: 'numeric' };
+                let tglObj = new Date(lastRow.Tanggal);
+                let tglRapi = tglObj.toLocaleDateString('id-ID', opsiTanggal);
+
+                // Update status di bawah dashboard
+                document.getElementById('text-info').innerText = "Update Terakhir: " + tglRapi + " | Pukul " + lastRow.Waktu;
+
+            } catch (error) {
+                console.error('Ada Error:', error);
+                document.getElementById('text-info').innerText = "Gagal memuat data. Periksa URL atau koneksi!";
+                document.getElementById('text-info').style.color = "red";
+            }
+        }
+
+        // Setel agar dashboard update otomatis setiap 5 detik
+        setInterval(fetchData, 5000);
+        
+        // Jalankan fungsi satu kali saat pertama kali dibuka
+        fetchData();
+    </script>
+</body>
+</html>
