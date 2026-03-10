@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring IoT</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; background-color: #f0f4f7; text-align: center; padding: 50px; }
+        h1 { color: #333; margin-bottom: 30px; }
+        .container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+        .card { 
+            background: white; padding: 25px; border-radius: 20px; 
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1); width: 200px;
+            border-top: 10px solid #1a73e8;
+        }
+        .label { font-size: 0.9rem; color: #666; font-weight: bold; }
+        .value { font-size: 2.8rem; font-weight: bold; color: #1a73e8; margin: 10px 0; }
+        .unit { font-size: 1rem; color: #888; }
+        #info { margin-top: 30px; font-size: 0.8rem; color: #777; }
+    </style>
+</head>
+<body>
+
+    <h1>Dashboard Monitoring Sensor</h1>
+
+    <div class="container">
+        <div class="card">
+            <div class="label">SUHU LM35</div>
+            <div class="value"><span id="vLM">0</span><span class="unit">°C</span></div>
+        </div>
+
+        <div class="card" style="border-top-color: #e67e22;">
+            <div class="label">SUHU DHT22</div>
+            <div class="value"><span id="vDHT">0</span><span class="unit">°C</span></div>
+        </div>
+
+        <div class="card" style="border-top-color: #27ae60;">
+            <div class="label">KELEMBAPAN</div>
+            <div class="value"><span id="vHUM">0</span><span class="unit">%</span></div>
+        </div>
+    </div>
+
+    <div id="info">Menghubungkan ke Google Sheets...</div>
+
+    <script>
+        // MASUKKAN URL GOOGLE APPS SCRIPT (DEPLOYMENT) KAMU DI SINI
+        const scriptURL = "https://script.google.com/macros/s/AKfycbwjwr7qXbc9D5D6C99gNKzyzqxvlXpE7JH_V9PeH4JUR57F2Y6cEWcGaypX7LMXn3KI/exec";
+
+        async function fetchData() {
+            try {
+                const response = await fetch(scriptURL);
+                const data = await response.json();
+                
+                // Mengambil baris data paling terakhir (data terbaru)
+                const lastRow = data[data.length - 1];
+
+                // Update angka berdasarkan label di Google Script
+                document.getElementById('vLM').innerText = lastRow.tempLM;
+                document.getElementById('vDHT').innerText = lastRow.tempDHT;
+                document.getElementById('vHUM').innerText = lastRow.humDHT;
+                
+                // Menampilkan status waktu terakhir (Kolom A & B)
+                document.getElementById('info').innerText = "Data terakhir dari: " + lastRow.Tanggal + " " + lastRow.Waktu;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('info').innerText = "Gagal memuat data. Periksa URL!";
+            }
+        }
+
+        // Jalankan fungsi setiap 5 detik
+        setInterval(fetchData, 5000);
+        fetchData();
+    </script>
+</body>
+</html>
