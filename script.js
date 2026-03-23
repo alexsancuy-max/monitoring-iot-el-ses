@@ -1,4 +1,4 @@
-// GANTI DENGAN URL GOOGLE SCRIPT KAMU
+// GANTI DENGAN URL WEB APP GOOGLE SCRIPT TERBARU KAMU
 const API_URL = "https://script.google.com/macros/s/AKfycbySs111BMgZm0pnhd2qLPq5qq1A_AmWo_LKVbGJwwNrLYFBZMkjsa31LoRjaDN9zZMvdQ/exec";
 
 let isLogging = false;
@@ -40,22 +40,23 @@ async function fetchData() {
         const data = await response.json();
 
         if (data.latest) {
-            // Update Status
             const statusEl = document.getElementById('status-connection');
             statusEl.innerText = "Connected";
             statusEl.className = "status-connected";
 
-            // Update Angka Card
-            document.getElementById('val-tempLM').innerText = data.latest.tempLM;
-            document.getElementById('val-tempDHT').innerText = data.latest.tempDHT;
-            document.getElementById('val-hum').innerText = data.latest.hum;
+            // Update Angka di Card (Gunakan toFixed untuk merapikan desimal)
+            document.getElementById('val-tempLM').innerText = Number(data.latest.tempLM).toFixed(1);
+            document.getElementById('val-tempDHT').innerText = Number(data.latest.tempDHT).toFixed(1);
+            document.getElementById('val-hum').innerText = Number(data.latest.hum).toFixed(1);
             document.getElementById('val-co2').innerText = data.latest.co2;
             
-            document.getElementById('special-condition').innerText = "Data Terakhir: " + data.latest.waktu;
+            // Perbaiki tampilan waktu di Kondisi Khusus
+            let cleanTime = String(data.latest.waktu).split(' ')[4] || String(data.latest.waktu);
+            document.getElementById('special-condition').innerText = "Data Terakhir: " + cleanTime;
         }
 
         if (data.history) {
-            const labels = data.history.map(d => String(d.waktu).substring(0, 5));
+            const labels = data.history.map(d => String(d.waktu).includes(':') ? String(d.waktu).substring(0, 5) : "Data");
             
             chartSuhu.data.labels = labels;
             chartSuhu.data.datasets[0].data = data.history.map(d => d.tempLM);
@@ -67,7 +68,6 @@ async function fetchData() {
             chartLingkungan.data.datasets[1].data = data.history.map(d => d.co2);
             chartLingkungan.update();
 
-            // Update Tabel
             const tbody = document.getElementById('table-body');
             tbody.innerHTML = "";
             [...data.history].reverse().forEach(row => {
@@ -92,7 +92,7 @@ document.getElementById('btn-start').addEventListener('click', () => {
     document.getElementById('btn-start').disabled = true;
     document.getElementById('btn-stop').disabled = false;
     fetchData();
-    intervalId = setInterval(fetchData, 5000); // Update tiap 5 detik
+    intervalId = setInterval(fetchData, 5000);
 });
 
 document.getElementById('btn-stop').addEventListener('click', () => {
@@ -100,6 +100,7 @@ document.getElementById('btn-stop').addEventListener('click', () => {
     document.getElementById('btn-start').disabled = false;
     document.getElementById('btn-stop').disabled = true;
     clearInterval(intervalId);
+    document.getElementById('status-connection').innerText = "Disconnected";
 });
 
 initCharts();
