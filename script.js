@@ -1,5 +1,5 @@
 // GANTI DENGAN URL GOOGLE SCRIPT KAMU
-const API_URL = "https://script.google.com/macros/s/AKfycbw0CxFN5F8u6b-vLWGFl6_52LdJ5l-hptcpIoMa6gvZS7ngIWWqov7mX8VM2IYR3NzM_Q/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbySs111BMgZm0pnhd2qLPq5qq1A_AmWo_LKVbGJwwNrLYFBZMkjsa31LoRjaDN9zZMvdQ/exec";
 
 let isLogging = false;
 let intervalId = null;
