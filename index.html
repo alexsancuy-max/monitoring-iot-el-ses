@@ -3,73 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Chart Monitoring ESP32</title>
+    <title>Multi-Chart Monitoring ESP32 - El & Ses</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --primary: #2c3e50; --danger: #e74c3c; --warning: #f39c12; --success: #27ae60; --info: #3498db; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f4f7f6; }
-        header { background: var(--primary); color: white; padding: 15px; text-align: center; }
-        .container { max-width: 1200px; margin: auto; padding: 20px; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f4f7f6; color: #333; }
+        header { background: var(--primary); color: white; padding: 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .container { max-width: 1300px; margin: auto; padding: 20px; }
         
-        /* Alert Box */
+        /* Area Notifikasi */
         .alert-container { margin-bottom: 20px; }
-        .alert { padding: 15px; border-radius: 8px; color: white; font-weight: bold; display: none; text-align: center; margin-bottom: 10px; }
-        .bg-danger { background: var(--danger); animation: blink 1s infinite; }
-        .bg-warning { background: var(--warning); }
-        @keyframes blink { 0% {opacity: 1;} 50% {opacity: 0.8;} 100% {opacity: 1;} }
+        .alert { padding: 15px; border-radius: 8px; color: white; font-weight: bold; display: none; text-align: center; margin-bottom: 10px; border: 2px solid rgba(0,0,0,0.1); }
+        .bg-danger { background: var(--danger); animation: blink 1.5s infinite; }
+        .bg-warning { background: var(--warning); color: black; }
+        @keyframes blink { 0% {opacity: 1;} 50% {opacity: 0.7;} 100% {opacity: 1;} }
 
-        /* Grid Layout untuk Grafik */
-        .grid-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; margin-bottom: 20px; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        /* Panel Kontrol & Link */
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: center; margin-bottom: 25px; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        button { padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; color: white; font-weight: bold; transition: 0.3s; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+        button:hover { opacity: 0.8; transform: translateY(-1px); }
+        input[type="number"] { padding: 10px; border: 1px solid #ddd; border-radius: 6px; width: 60px; text-align: center; font-size: 16px; }
         
-        /* Controls */
-        .controls { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: center; margin-bottom: 20px; background: white; padding: 15px; border-radius: 10px; }
-        button { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; text-decoration: none; font-size: 14px; }
-        .btn-sheet { background: var(--info); display: inline-flex; align-items: center; gap: 8px; }
-        .btn-sheet:hover { background: #2980b9; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 10px; border: 1px solid #ddd; text-align: center; }
-        th { background: #eee; }
+        .btn-sheet { background: var(--info); text-decoration: none; }
+
+        /* Grid Grafik */
+        .grid-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .card h4 { margin-top: 0; color: var(--primary); border-bottom: 2px solid #f4f7f6; padding-bottom: 10px; }
+
+        /* Tabel Data */
+        .table-res { overflow-x: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; }
+        th { background: #f8f9fa; color: var(--primary); font-weight: bold; }
+        .badge { padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<header><h1>Dashboard Monitoring Sensor Terpisah</h1></header>
+<header>
+    <h1>Monitoring Dashboard IoT - Project El & Ses</h1>
+</header>
 
 <div class="container">
     <div class="alert-container">
         <div id="tempAlert" class="alert bg-danger">⚠️ PERINGATAN: SUHU MELEBIHI 40°C!</div>
         <div id="gasAlert" class="alert bg-danger">⚠️ PERINGATAN: KADAR GAS TIDAK NORMAL (>1000 PPM)!</div>
-        <div id="gasNormal" class="alert bg-warning" style="color: black;">ℹ️ STATUS GAS: NORMAL (400-1000 PPM)</div>
+        <div id="gasNormal" class="alert bg-warning">ℹ️ STATUS GAS: NORMAL (400-1000 PPM)</div>
     </div>
 
-    <div class="controls card">
-        <label>Interval (Detik):</label>
-        <input type="number" id="interval" value="5" style="width:50px">
-        <button style="background: var(--success)" onclick="start()">START</button>
-        <button style="background: var(--danger)" onclick="stop()">STOP</button>
+    <div class="controls">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <label>Interval (Detik):</label>
+            <input type="number" id="interval" value="5">
+        </div>
         
-        <a href="https://docs.google.com/spreadsheets/d/1uL2Yz_IilXGDTbYcOIz9y1fQaUsF1heuZeX6NQEdEw8/edit?gid=0#gid=0" target="_blank">
+        <button style="background: var(--success)" onclick="start()">▶ START MONITORING</button>
+        <button style="background: var(--danger)" onclick="stop()">■ STOP</button>
+        
+        <a href="https://docs.google.com/spreadsheets/d/1uL2Yz_IilXGDTbYcOIz9y1fQaUsF1heuZeX6NQEdEw8/edit?gid=0#gid=0" target="_blank" style="text-decoration: none;">
             <button class="btn-sheet">📂 BUKA SPREADSHEET</button>
         </a>
 
-        <span id="logStatus">Status: <b style="color: var(--danger)">Berhenti</b></span>
+        <div id="logStatus" style="font-weight: bold; margin-left: 10px;">Status: <span style="color: var(--danger)">Berhenti</span></div>
     </div>
 
     <div class="grid-charts">
-        <div class="card"><h4>Grafik Suhu LM35 (°C)</h4><canvas id="chartLM"></canvas></div>
-        <div class="card"><h4>Grafik Suhu DHT22 (°C)</h4><canvas id="chartDHT"></canvas></div>
-        <div class="card"><h4>Grafik Kelembapan (%)</h4><canvas id="chartHum"></canvas></div>
-        <div class="card"><h4>Grafik Gas MQ135 (PPM)</h4><canvas id="chartMQ"></canvas></div>
+        <div class="card"><h4>Suhu LM35 (°C)</h4><canvas id="chartLM"></canvas></div>
+        <div class="card"><h4>Suhu DHT22 (°C)</h4><canvas id="chartDHT"></canvas></div>
+        <div class="card"><h4>Kelembapan (%)</h4><canvas id="chartHum"></canvas></div>
+        <div class="card"><h4>Gas MQ135 (PPM)</h4><canvas id="chartMQ"></canvas></div>
     </div>
 
-    <div class="card" style="overflow-x:auto;">
-        <h4>10 Data Terakhir</h4>
+    <div class="table-res">
+        <h4 style="margin-bottom: 15px;">Data Log Terakhir (10 Baris)</h4>
         <table>
             <thead>
                 <tr>
-                    <th>Waktu</th><th>LM35</th><th>DHT22</th><th>Hum</th><th>MQ135</th><th>WiFi</th><th>SD</th>
+                    <th>Waktu</th><th>Temp LM35</th><th>Temp DHT22</th><th>Humi (%)</th><th>MQ135 (PPM)</th><th>WiFi</th><th>SD Card</th>
                 </tr>
             </thead>
             <tbody id="tableData"></tbody>
@@ -78,32 +89,42 @@
 </div>
 
 <script>
-    // Gunakan URL Web App Anda yang terbaru
+    // URL Web App Google Apps Script Anda
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyt5vuodHV1pSXCfqMJXdbtrlgYDW4D8UJEcPgSEiwoJesiWf-6NpeX5Ow94n50eHiUlg/exec?read=true";
     let timer;
     let charts = {};
 
-    // Fungsi pembersihan format agar tidak muncul ISO (T/Z)
-    function cleanTime(timeStr) {
+    // Fungsi membersihkan format waktu ISO menjadi teks jam
+    function formatTime(timeStr) {
         if (!timeStr) return "-";
         let str = String(timeStr);
-        return str.includes("T") ? str.split("T")[1].split(".")[0] : str;
+        // Jika format ISO (2026-04-03T...), ambil jamnya saja
+        if (str.includes("T")) {
+            return str.split("T")[1].split(".")[0];
+        }
+        return str;
     }
 
-    function createChart(id, label, color) {
+    // Inisialisasi Grafik
+    function initChart(id, label, color) {
         return new Chart(document.getElementById(id), {
             type: 'line',
-            data: { labels: [], datasets: [{ label: label, borderColor: color, data: [], fill: false, tension: 0.1 }] },
-            options: { responsive: true, animation: false }
+            data: { labels: [], datasets: [{ label: label, borderColor: color, backgroundColor: color + '22', data: [], fill: true, tension: 0.3 }] },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false,
+                animation: false,
+                scales: { y: { beginAtZero: false } }
+            }
         });
     }
 
-    charts.lm = createChart('chartLM', 'Suhu LM35', '#e74c3c');
-    charts.dht = createChart('chartDHT', 'Suhu DHT22', '#3498db');
-    charts.hum = createChart('chartHum', 'Kelembapan', '#2ecc71');
-    charts.mq = createChart('chartMQ', 'Gas MQ135', '#f39c12');
+    charts.lm = initChart('chartLM', 'Suhu LM35', '#e74c3c');
+    charts.dht = initChart('chartDHT', 'Suhu DHT22', '#3498db');
+    charts.hum = initChart('chartHum', 'Kelembapan', '#2ecc71');
+    charts.mq = initChart('chartMQ', 'Gas MQ135', '#f39c12');
 
-    async function updateData() {
+    async function fetchData() {
         try {
             const response = await fetch(SCRIPT_URL);
             const data = await response.json();
@@ -112,44 +133,52 @@
             const history = data.slice(-10);
             const latest = data[data.length - 1];
 
-            // Update Tabel
+            // 1. Update Tabel & Fix Tampilan
             let rows = "";
             [...history].reverse().forEach(d => {
                 rows += `<tr>
-                    <td>${cleanTime(d.waktu)}</td>
-                    <td>${d.lm35}</td><td>${d.dht22}</td><td>${d.hum}</td><td>${d.mq135}</td>
-                    <td>${d.wifi}</td><td>${d.sd}</td>
+                    <td>${formatTime(d.waktu)}</td>
+                    <td><b>${d.lm35}</b></td>
+                    <td><b>${d.dht22}</b></td>
+                    <td><b>${d.hum}</b></td>
+                    <td><b>${d.mq135}</b></td>
+                    <td><span class="badge" style="background:#d4edda; color:#155724">${d.wifi}</span></td>
+                    <td><span class="badge" style="background:#d1ecf1; color:#0c5460">${d.sd}</span></td>
                 </tr>`;
             });
             document.getElementById("tableData").innerHTML = rows;
 
-            // Update Grafik
-            const labels = history.map(d => cleanTime(d.waktu));
-            charts.lm.data.labels = labels; charts.lm.data.datasets[0].data = history.map(d => d.lm35); charts.lm.update();
-            charts.dht.data.labels = labels; charts.dht.data.datasets[0].data = history.map(d => d.dht22); charts.dht.update();
-            charts.hum.data.labels = labels; charts.hum.data.datasets[0].data = history.map(d => d.hum); charts.hum.update();
-            charts.mq.data.labels = labels; charts.mq.data.datasets[0].data = history.map(d => d.mq135); charts.mq.update();
+            // 2. Update Grafik
+            const timeLabels = history.map(d => formatTime(d.waktu));
+            charts.lm.data.labels = timeLabels; charts.lm.data.datasets[0].data = history.map(d => d.lm35); charts.lm.update();
+            charts.dht.data.labels = timeLabels; charts.dht.data.datasets[0].data = history.map(d => d.dht22); charts.dht.update();
+            charts.hum.data.labels = timeLabels; charts.hum.data.datasets[0].data = history.map(d => d.hum); charts.hum.update();
+            charts.mq.data.labels = timeLabels; charts.mq.data.datasets[0].data = history.map(d => d.mq135); charts.mq.update();
 
-            // Logika Alert
-            const gasVal = parseFloat(latest.mq135);
-            document.getElementById("tempAlert").style.display = (latest.lm35 > 40 || latest.dht22 > 40) ? "block" : "none";
-            document.getElementById("gasAlert").style.display = (gasVal > 1000) ? "block" : "none";
-            document.getElementById("gasNormal").style.display = (gasVal >= 400 && gasVal <= 1000) ? "block" : "none";
+            // 3. Logika Peringatan
+            // Suhu > 40
+            const maxTemp = Math.max(parseFloat(latest.lm35), parseFloat(latest.dht22));
+            document.getElementById("tempAlert").style.display = (maxTemp > 40) ? "block" : "none";
+            
+            // Gas MQ135 (400-1000 Normal, >1000 Bahaya)
+            const gas = parseFloat(latest.mq135);
+            document.getElementById("gasAlert").style.display = (gas > 1000) ? "block" : "none";
+            document.getElementById("gasNormal").style.display = (gas >= 400 && gas <= 1000) ? "block" : "none";
 
-        } catch (e) { console.error("Error:", e); }
+        } catch (e) { console.error("Koneksi Gagal:", e); }
     }
 
     function start() {
-        const sec = document.getElementById("interval").value;
-        updateData();
+        const interval = document.getElementById("interval").value;
+        fetchData();
         if (timer) clearInterval(timer);
-        timer = setInterval(updateData, sec * 1000);
-        document.getElementById("logStatus").innerHTML = "Status: <b style='color: var(--success)'>Berjalan</b>";
+        timer = setInterval(fetchData, interval * 1000);
+        document.getElementById("logStatus").innerHTML = 'Status: <span style="color: var(--success)">Berjalan</span>';
     }
 
     function stop() {
         clearInterval(timer);
-        document.getElementById("logStatus").innerHTML = "Status: <b style='color: var(--danger)'>Berhenti</b>";
+        document.getElementById("logStatus").innerHTML = 'Status: <span style="color: var(--danger)">Berhenti</span>';
     }
 </script>
 </body>
